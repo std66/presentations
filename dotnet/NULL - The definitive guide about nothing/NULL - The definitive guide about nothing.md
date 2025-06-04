@@ -1,232 +1,295 @@
 
-# The Definitive Guide About Nothing (C# Null Handling)
+# NULL: The definitive guide about nothing
 
-
-
-## NULL
-
-- The definitive guide about nothing
-
+## Author
+Tamás Sinku (sinkutamas@gmail.com)
 
 ## Things we already know
 
-- In C#, we have
-- Value-Types, allocated on „stack” and always have a defined value.
-- Reference-Types are allocated on „heap”. A reference is allocated on the stack that may or may not refer to an object on the heap.
-- NULL
-- In other programming languages: nil (eg. Delphi, Lua), Nothing (eg. Visual Basic), None (eg. Python)
-- C# keyword: null
-- Default value of any Reference-Type
-- Represents a state in which there’s no allocated object on the heap to be referenced
-- Meaning:
+ In C#, we have
+- Value-Types, allocated on "stack" and always have a defined value.
+- Reference-Types are allocated on "heap". A reference is allocated on the stack that may or may not refer to an object on the heap.
+
+`null`
+In other programming languages: `nil` (eg. Delphi, Lua), `Nothing` (eg. Visual Basic), `None` (eg. Python). The C# keyword is `null`. `null` is the default value of any Reference-Type. It represents a state in which there’s no allocated object on the heap to be referenced.
+
+Meaning of `null`:
 - A property which is not applicable within a given context
 - An unknown value:
-- An existing information which is not known
-- It is not known whether the information exists or not
+  - An existing information which is not known
+  - It is not known whether the information exists or not
 
+Dereferencing: Accessing the allocated object on the heap. When a NULL-reference is tried to be dereferenced, a `NullReferenceException` is thrown at runtime.
 
-## Things we already know
+NULL-reference can be checked as simply as:
+```csharp
+//Students and its items are not null, but SingleOrDefault
+//may return null if no matching element found
+Student s = Students.SingleOrDefault(x => x.Id == 123);
 
-- Dereferencing: Accessing the allocated object on the heap.
-- When a NULL-reference is tried to be dereferenced, a NullReferenceException is thrown at runtime
-- Students.SingleOrDefault(x => x.Id == 123).Name //SingleOrDefault fails to find a matching object
-- NULL-reference can be checked as simply as:
-- Student s = Students.SingleOrDefault(x => x.Id == 123); //Students and its items are not null
-- if (s == null) {
-- return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
+// Is this good enough?
+if (s == null)
+  return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
+
+string studentName = s.Name;
+```
+
+## Checking for NULL-values
+
+### `== null` is unsafe
+
+Operators, including `==` and `!=`, can be overloaded, making it unsafe for NULL-checks:
+```csharp
+class Student {
+  public static bool operator ==(Student a, Student b) => false;
+  public static bool operator !=(Student a, Student b) => true;
 }
-- string studentName = s.Name;
+
+Student s = Students.FirstOrDefault(x => x.Id == 123); //returns null
+if (s == null) //condition is not met
+  return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
+
+string studentName = s.Name; //Unhandled NullReferenceException
+```
+
+### Also doesn't work: `Object.Equals`
+
+```csharp
+Student s = Students.FirstOrDefault(x => x.Id == 123);
+if (s.Equals(null))
+  return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
+```
+
+`Equals` requires dereferencing, therefore `NullReferenceException` is thrown. Also, `Equals` can be overridden, too.
 
 
-## Is this good enough?
+### `Object.ReferenceEquals`
+
+Usage example:
+```csharp
+Student s = Students.FirstOrDefault(x => x.Id == 123);
+if (Object.ReferenceEquals(s, null))
+  return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
+```
+
+`Object.ReferenceEquals` also uses the equality operator. Yet it somehow works?! Notice the implicit cast from `Student` to `System.Object` in the implementation below. Because of this, the equality operator of System.Object is being invoked instead of the overrides.
+
+```csharp
+public static bool ReferenceEquals(object objA, object objB)
+  => objA == objB;
+```
 
 
+### The proper way of null-checking
 
-## Is this good enough?
+So we can explicitly cast expressions to `System.Object`:
 
-
-
-## Checking for NULL-values
-
-- == and != operators can be overloaded, making it unsafe for NULL-checks
-- class Student {
-- public static bool operator ==(Student a, Student b) => false;
-- public static bool operator !=(Student a, Student b) => true;
+```csharp
+Student s = Students.FirstOrDefault(x => x.Id == 123);
+if ((object)s == null) {
+  return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
 }
-- Student s = Students.FirstOrDefault(x => x.Id == 123); //returns null
-- if (s == null) { //condition is not met
-- return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
+```
+The good way to check NULL-values up until C# 7.0
+
+
+### New language features for a better null-safe code
+
+#### Pattern matching
+```csharp
+Student s = Students.FirstOrDefault(x => x.Id == 123);
+if (s is null) {
+  return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
 }
-- string studentName = s.Name; //Unhandled NullReferenceException
+```
 
+Lowered as:
+```csharp
+if ((object)s == null)
+```
 
-## Checking for NULL-values
+Checking for not null in C# 7.0, 7.1, 7.2, 7.3, 8:
+```csharp
+if (!(s is null))
+if (s is object)
+if (s is {})
+```
 
-- Maybe use the Equals method instead?
-- Student s = Students.FirstOrDefault(x => x.Id == 123);
-- if (s.Equals(null))
-- return new FindStudentResult(FindStudentResult.Errors.StudentNotFound); Equals requires dereferencing, therefore NullReferenceException is thrown.
-- Also, Equals can be overridden, too.
+Negated patterns are introduced in C# 9:
+```csharp
+if (s is not null)
+```
 
+#### Null-safe member checking and accessing
+Before C# 6:
+```csharp
+var result = (object)a != null && (object)a.b != null ? a.b.c : null
+```
 
-## Checking for NULL-values
+C# 6 introduced **short-circuiting null-conditional member accessor** and indexer:
+```csharp
+var result = a?.b?.c
+PropertyChanged?.Invoke(…);
+var value = someDictionary?["key"]
+```
 
-- We still have Object.ReferenceEquals
-- Student s = Students.FirstOrDefault(x => x.Id == 123);
-- if (Object.ReferenceEquals(s, null))
-- return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
-- Object.ReferenceEquals also uses the equality operator. Yet it somehow works?!
-- public static bool ReferenceEquals(object objA, object objB)
-- => objA == objB;
-- Notice the implicit cast from Student to System.Object
-- The equality operator of System.Object is being invoked
+Pattern matching can also be used for null-checking properties:
+```csharp
+if (student is { Gradebook: not null })
+//equivalent to: if (student?.Gradebook is not null)
+```
 
+C# 7.0 introduced **throw expressions**:
+```csharp
+var a = (object)b == null ? throw new ArgumentNullException(nameof(b)) : b;
+```
 
-## Checking for NULL-values
+**Null-coalescing operators** are introduced in C# 8. `??` operator is a syntax sugar for the following code:
+```csharp
+a ?? b
+//is equivalent to:
+(object)a != null ? a : b
+```
 
-- So we can explicitly cast expressions to System.Object:
-- Student s = Students.FirstOrDefault(x => x.Id == 123);
-- if ((object)s == null) {
-- return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
-}
-- The good way to check NULL-values up until C# 7.0
+`??` operator with throw expressions:
+```csharp
+a ?? throw new ArgumentNullException(nameof(a));
+```
 
+`??=` is the **null-coalescing assignment operator**:
+```csharp
+b ??= a
+//is equivalent to:
+b = (object)b == null ? a : b
+```
 
-## Checking for NULL-values
+Upcoming in C# 14: **Null-conditional assignment**
 
-- C# 7.0 introduces pattern matching:
-- Student s = Students.FirstOrDefault(x => x.Id == 123);
-- if (s is null) {
-- return new FindStudentResult(FindStudentResult.Errors.StudentNotFound);
-}
-- Lowered as:
-- if ((object)s == null)
-- Checking for not null in C# 7.0, 7.1, 7.2, 7.3, 8:
-- if (!(s is null))
-- if (s is object)
-- if (s is {})
-- Negated patterns are introduced in C# 9:
-- if (s is not null)
-
-
-## Checking for NULL-values
-
-- Null-safe member checking and accessing
-- Before C# 6:
-- var result = (object)a != null && (object)a.b != null ? a.b.c : null
-- C# 6 introduced short-circuiting null-conditional member accessor and indexer:
-- var result = a?.b?.c
-- PropertyChanged?.Invoke(…);
-- var value = someDictionary?["key"]
-- C# 9.0 pattern matching can also be used for null-checking properties:
-- if (student is { Gradebook: not null })
-- //equivalent to: if (student?.Gradebook is not null)
-- C# 7.0 introduced throw expressions:
-- var a = (object)b == null ? throw new ArgumentNullException(nameof(b)) : b;
-
-
-## Checking for NULL-values
-
-- Null-coalescing operators are introduced in C# 8
-- ?? operator is a syntax sugar for the following code:
-- (object)a != null ? a : b
-- a ?? b
-- ?? operator with throw expressions:
-- a ?? throw new ArgumentNullException(nameof(a));
-- ??= is the null-coalescing assignment operator:
-- b = (object)b == null ? a : b
-- b ??= a
-
-
-## Upcoming in C# 14Null-conditional assignment
-
-- if (something is not null) something.SomeProperty = "something";
-- if (list is not null) list[index] = "something";
-- In C# 14:
-- something?.SomeProperty = "something";
-- list?[index] = "something";
-- Can be used with compound assignment operators (+=, -=, …)
-- Cannot be used with increment (++) and decrement (--) operators
-- The right hand side expression is evaluated only if the left hand side is not null
+```csharp
+if (something is not null) something.SomeProperty = "something";
+if (list is not null) list[index] = "something";
+```
+Equivalent code in C# 14:
+```csharp
+something?.SomeProperty = "something";
+list?[index] = "something";
+```
+Null-conditional assignment:
+- Can be used with compound assignment operators (`+=`, `-=`, …)
+- Cannot be used with increment (`++`) and decrement (`--`) operators
+- The right hand side expression is evaluated only if the left hand side is not `null`
 
 
 ## NULL-value related exceptions
 
-- System.NullReferenceException
-- Thrown during an attempt to dereference a NULL value by accessing a member of a non-existing object.
-- The following methods of Nullable<T> does not throw NullReferenceException:
-- bool Equals(object)
-- int GetHashCode()
-- T GetValueOrDefault()
-- T GetValueOrDefault(T)
-- string ToString()
+### `System.NullReferenceException`
+Thrown during an attempt to dereference a `null` value by accessing a member of a non-existing object.
 
+The following methods of `Nullable<T>` does not throw `NullReferenceException`:
+- `bool Equals(object)`
+- `int GetHashCode()`
+- `T GetValueOrDefault()`
+- `T GetValueOrDefault(T)`
+- `string ToString()`
 
-## NULL-value related exceptions
+### `System.ArgumentNullException`
+Thrown when a method that does not accept `null` as an argument receives `null`.
 
-- System.ArgumentNullException
-- Thrown when a method that does not accept NULL as an argument receives NULL.
-- void Print(string message) { if (message is null) throw new ArgumentNullException(nameof(message)); //.NET 7 or newer: ArgumentNullException.ThrowIfNull(message); Console.WriteLine(message);}
-- There was a C# language proposal „Parameter NULL checking” to simplify throwing this exception which was rejected by the community:
-- void Print(string message!!) { //bangbang operator checks for NULL and throws ArgumentNullException Console.WriteLine(message);}
+```csharp
+void Print(string message) {
+  if (message is null) throw new ArgumentNullException(nameof(message));
+  //.NET 7 or newer:
+  ArgumentNullException.ThrowIfNull(message);
+  
+  Console.WriteLine(message);
+}
+```
 
+There was a C# language proposal **Parameter NULL checking** to simplify throwing this exception which was rejected by the community:
+```csharp
+void Print(string message!!) { //bangbang operator checks for NULL and throws ArgumentNullException
+  Console.WriteLine(message);
+}
+```
 
-## NULL-value related exceptions
+### `System.InvalidOperationException`
+Although not exclusively related to `null`, this exception can be thrown when an operation is invalid due to the current state of the object, which may include a situation where the object or some part of it is `null`.
 
-- System.InvalidOperationException
-- Although not exclusively related to NULL, this exception can be thrown when an operation is invalid due to the current state of the object, which may include a situation where the object or some part of it is NULL.
-- This exception is thrown in case of accessing Nullable<T>.Value when HasValue is false:
-- public struct MyStruct { public string MyProp { get; set; }} MyStruct? s = null;Console.WriteLine(s.Value.MyProp);
+This exception is thrown in case of accessing `Nullable<T>.Value` when `HasValue` is `false`:
+```csharp
+public struct MyStruct {
+  public string MyProp { get; set; }
+} 
 
+MyStruct? s = null;
+Console.WriteLine(s.Value.MyProp);
+```
 
-## NULL-value related exceptions
+### `System.Reflection.TargetInvocationException`
+Thrown when an exception is thrown by a method invoked through reflection, including `NullReferenceException`. Check `InnerException` for details.
+```csharp
+public class SomeClass {
+  public static void SomeMethod() {
+    object o = null;
+    string s = o.ToString(); //throws NullReferenceException 
+  }
+}
 
-- System.Reflection.TargetInvocationException
-- Thrown when an exception is thrown by a method invoked through reflection, including NullReferenceException.
-- Check InnerException for details
-- public class SomeClass { public static void SomeMethod() { object o = null; string s = o.ToString(); //throws NullReferenceException }} MethodInfo method = typeof(SomeClass).GetMethod("SomeMethod");method.Invoke(null, null); //throws TargetInvocationException
+MethodInfo method = typeof(SomeClass).GetMethod("SomeMethod");
+method.Invoke(null, null); //throws TargetInvocationException
+```
 
+### `Microsoft.CSharp.RuntimeBinder.RuntimeBinderException`
+Can be expected when using `dynamic`. Thrown when the runtime binder fails to bind, including:
+- Dereferencing a `null`-value
+- Assigning a dynamic expression evaluating to `null` to a non-nullable type
 
-## NULL-value related exceptions
-
-- Microsoft.CSharp.RuntimeBinder.RuntimeBinderException
-- Can be expected when using dynamic
-- Thrown when the runtime binder fails to bind, including:
-- Dereferencing a null-value
-- Assigning a dynamic expression evaluating to null to a non-nullable type
-- dynamic o = (string)null;int a = o.Length; //throws RuntimeBinderException (dereferencing null-value)int b = o?.Length; //throws RuntimeBinderException (assigning null-value to non-nullable type)
+```csharp
+dynamic o = (string)null;
+int a = o.Length; //throws RuntimeBinderException (dereferencing null-value)
+int b = o?.Length; //throws RuntimeBinderException (assigning null-value to non-nullable type)
+```
 
 
 ## Nullable value types
 
-- Introduced in C# 2.0
-- Based on struct System.Nullable<T>, enables value-types to have null-values
-- Declaration syntax:
-- Nullable<int> i = null;
-- int? i = null;
-- Nullable<T> is actually never null, since it is also a value-type. This adds the following logic:
-- bool Nullable<T>.HasValue { get; } property is false when null-value is assigned
-- T Nullable<T>.Value { get; } property gets the assigned value when HasValue is true. Otherwise it throws InvalidOperationException.
+Introduced in C# 2.0. Based on struct `System.Nullable<T>`, enables value-types to have `null`-values.
 
+Declaration syntax:
+```csharp
+Nullable<int> i = null;
+int? i = null; //short syntax
+```
 
-## Nullable value types
+`Nullable<T>` is actually never `null`, since it is also a value-type. This adds the following logic:
+- `bool Nullable<T>.HasValue { get; }` property is `false` when `null`-value is assigned
+- `T Nullable<T>.Value { get; }` property gets the assigned value when `HasValue` is `true`. Otherwise it throws `InvalidOperationException`.
 
-- Null-safe value access
-- Use HasValue directly:
-- if (!enableErrorReporting.HasValue || enableErrorReporting.Value)
-- EnableErrorReporting(); //Feature enabled by default, if not disabled explicitly
-- Use GetValueOrDefault:
-- if (enableErrorReporting.GetValueOrDefault())
-- EnableErrorReporting(); //Feature disabled by default, if not enabled explicitly
-- Unlike reference types, you can safely use == and != operators without casting even if overloaded in the underlying struct:
-- if (enableErrorReporting == null) //checking against null is lowered to checking HasValue
-- Pattern matching works the same way as with reference-types
+### Null-safe value access
+
+Use `HasValue` directly:
+```csharp
+if (!enableErrorReporting.HasValue || enableErrorReporting.Value)
+  EnableErrorReporting(); //Feature enabled by default, if not disabled explicitly
+```
+
+Use `GetValueOrDefault`:
+```csharp
+if (enableErrorReporting.GetValueOrDefault())
+  EnableErrorReporting(); //Feature disabled by default, if not enabled explicitly
+```
+
+Unlike reference types, you can safely use `==` and `!=` operators without casting even if overloaded in the underlying struct:
+```csharp
+if (enableErrorReporting == null) //checking against null is lowered to checking HasValue
+```
+Pattern matching works the same way as with reference-types.
 
 
 ### Lifted operators
 
 Any unary and binary operators that struct `T` supports are also supported by `Nullable<T>`.
-- Called „Lifted operators”.
+- Called "Lifted operators".
 - Will produce `null` if one or both operands are `null`:
 
 ```csharp
@@ -244,11 +307,24 @@ As for comparison operators (`<`, `>`, `<=` and `>=`), if one or both operands a
 - The `&` operator produces `true` only if both its operands evaluate to `true`. If either `x` or `y` evaluates to false, `x & y` produces `false` (even if another operand evaluates to `null`). Otherwise, the result of `x & y` is `null`.
 - The `|` operator produces false only if both its operands evaluate to false. If either `x` or `y` evaluates to `true`, `x | y` produces `true` (even if another operand evaluates to `null`). Otherwise, the result of `x | y` is `null`.
 
+Truth table:
+
+| x     | y     | x&y   | x\|y  |
+|-------|-------|-------|-------|
+| true  | true  | true  | true  |
+| true  | false | false | true  |
+| true  | null  | null  | true  |
+| false | true  | false | true  |
+| false | false | false | false |
+| false | null  | false | null  |
+| null  | true  | null  | true  |
+| null  | false | false | null  |
+| null  | null  | null  | null  |
 
 ### Boxing and unboxing
-- An instance of a nullable value type T? is boxed as follows:
-- If HasValue returns false, the null reference is produced.
-- If HasValue returns true, the corresponding value of the underlying value type T is boxed, not the Nullable<T> itself.
+- An instance of a nullable value type `T?` is boxed as follows:
+- If `HasValue` returns `false`, the `null` reference is produced.
+- If `HasValue` returns `true`, the corresponding value of the underlying value type `T` is boxed, not the `Nullable<T>` itself.
 
 
 ### Identifying nullable value types by its value
@@ -309,24 +385,20 @@ Goals:
 
 - Introduced in C# 8
 - Optional language feature
-- Allows developers to express when a reference type can or cannot be null
-- Refers to a group of features enabled in a nullable aware context that minimize the likelihood that user code causes the runtime to throw NullReferenceException:
-- Improved static flow analysis that determines if a variable might be null before dereferencing it.
-- Attributes that annotate APIs so that the flow analysis determines null-state.
-- Variable annotations that developers use to explicitly declare the intended null-state for a variable.
+- Allows developers to express when a reference type can or cannot be `null`
+- Refers to a group of features enabled in a nullable aware context that minimize the likelihood that user code causes the runtime to throw `NullReferenceException`:
+  - Improved static flow analysis that determines if a variable might be null before dereferencing it.
+  - Attributes that annotate APIs so that the flow analysis determines null-state.
+  - Variable annotations that developers use to explicitly declare the intended null-state for a variable.
 
-Nullable context is a combination of two separate features.
-
-Nullable annotation context
-- Consists of language syntax extensions and new attributes that allow the developer to specify the nullability of reference types
-
-Nullable warning context
-- Consists of a set of compiler warnings that are raised whenever a non-null-safe operation is being performed
+Nullable context is a combination of two separate features:
+- **Nullable annotation context**: Consists of language syntax extensions and new attributes that allow the developer to specify the nullability of reference types
+- **Nullable warning context**: Consists of a set of compiler warnings that are raised whenever a non-null-safe operation is being performed
 
 Every type has one of three nullabilities:
-- Oblivious: All reference types are nullable oblivious when the annotation context is disabled.
-- Nonnullable: An unannotated reference type, `C` is nonnullable when the annotation context is enabled.
-- Nullable: An annotated reference type, `C?`, is nullable, but a warning may be issued when the annotation context is disabled. Variables declared with var are nullable when the annotation context is enabled.
+- **Oblivious**: All reference types are nullable oblivious when the annotation context is disabled.
+- **Nonnullable**: An unannotated reference type, `C` is nonnullable when the annotation context is enabled.
+- **Nullable**: An annotated reference type, `C?`, is nullable, but a warning may be issued when the annotation context is disabled. Variables declared with var are nullable when the annotation context is enabled.
 
 ### Configuring the nullable context
 
@@ -509,7 +581,7 @@ Forbids assigning `null` to an otherwise nullable type.
 private string? _comment;
 
 [DisallowNull]
-public string? ReviewComment{
+public string? ReviewComment {
     get => _comment;
     set => _comment = value ?? ArgumentNullException.ThrowIfNull(value);
 }
@@ -733,7 +805,7 @@ Marks a method that does not return gracefully when a parameter has a given `boo
 
 private void Test(string? arg) {
     ThrowIf(arg is null);
-    Console.WriteLine(arg.Length); //safe to dereference "arg"
+    Console.WriteLine(arg.Length); //safe to dereference "arg"
 }
 
 private void ThrowIf([DoesNotReturnIf(true)] bool flag) {
@@ -1157,7 +1229,7 @@ var c = GetBookInfo(b3); // C# in Depth by John Doe
 
 The value-types `IntPtr` and `UIntPtr` are integers with the exact same bit length of an unmanaged pointer.
 
-C# 9 introduced nint and nuint:
+C# 9 introduced `nint` and `nuint`:
 - Contextual keywords
   - Only available if no other type is defined by the dev with the same name
 - Internal implementation is represented with `IntPtr` and `UIntPtr`
