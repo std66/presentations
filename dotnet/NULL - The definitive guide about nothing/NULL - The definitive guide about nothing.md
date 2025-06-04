@@ -322,7 +322,7 @@ Truth table:
 | null  | null  | null  | null  |
 
 ### Boxing and unboxing
-- An instance of a nullable value type `T?` is boxed as follows:
+An instance of a nullable value type `T?` is boxed as follows:
 - If `HasValue` returns `false`, the `null` reference is produced.
 - If `HasValue` returns `true`, the corresponding value of the underlying value type `T` is boxed, not the `Nullable<T>` itself.
 
