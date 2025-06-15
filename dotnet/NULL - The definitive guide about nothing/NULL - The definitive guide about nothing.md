@@ -1,4 +1,5 @@
 
+
 # NULL: The definitive guide about nothing
 
 ## Author
@@ -304,22 +305,22 @@ As for comparison operators (`<`, `>`, `<=` and `>=`), if one or both operands a
 ### `Nullable<bool>`
 
 `Nullable<bool>` has some different behavior with `&` and `|` operators:
-- The `&` operator produces `true` only if both its operands evaluate to `true`. If either `x` or `y` evaluates to false, `x & y` produces `false` (even if another operand evaluates to `null`). Otherwise, the result of `x & y` is `null`.
-- The `|` operator produces false only if both its operands evaluate to false. If either `x` or `y` evaluates to `true`, `x | y` produces `true` (even if another operand evaluates to `null`). Otherwise, the result of `x | y` is `null`.
+- The `&` operator produces `true` only if both its operands evaluate to `true`. If either `x` or `y` evaluates to `false`, `x & y` produces `false` (even if another operand evaluates to `null`). Otherwise, the result of `x & y` is `null`.
+- The `|` operator produces `false` only if both its operands evaluate to `false`. If either `x` or `y` evaluates to `true`, `x | y` produces `true` (even if another operand evaluates to `null`). Otherwise, the result of `x | y` is `null`.
 
 Truth table:
 
-| x     | y     | x&y   | x\|y  |
-|-------|-------|-------|-------|
-| true  | true  | true  | true  |
-| true  | false | false | true  |
-| true  | null  | null  | true  |
-| false | true  | false | true  |
-| false | false | false | false |
-| false | null  | false | null  |
-| null  | true  | null  | true  |
-| null  | false | false | null  |
-| null  | null  | null  | null  |
+| `x`     | `y`     | `x&y`   | `x\|y`   |
+|---------|---------|---------|----------|
+| `true`  | `true`  | `true`  | `true`   |
+| `true`  | `false` | `false` | `true`   |
+| `true`  | `null`  | `null`  | `true`   |
+| `false` | `true`  | `false` | `true`   |
+| `false` | `false` | `false` | `false`  |
+| `false` | `null`  | `false` | `null`   |
+| `null`  | `true`  | `null`  | `true`   |
+| `null`  | `false` | `false` | `null`   |
+| `null`  | `null`  | `null`  | `null`   |
 
 ### Boxing and unboxing
 An instance of a nullable value type `T?` is boxed as follows:
@@ -439,7 +440,7 @@ Which one to choose?
 - `disable`: for legacy projects that you don't want to update.
 - `warnings`: to determine where your code might throw `NullReferenceException`. You can address those warnings before modifying code to enable non-nullable reference types.
 - `annotations`: to express your design intent before enabling warnings.
-- `enable`: for new projects and active projects where you want to have protection against null reference exceptions.
+- `enable`: for new projects and active projects where you want to have protection against `NullReferenceException`.
 
 
 #### Project-level configuration in .csproj file
@@ -490,7 +491,7 @@ Further annotate the code’s behavior using nullability attributes:
 `T?` looks exactly the same in code for value-types and reference-types, but they work differently. The different behaviors of Nullable Value Types and Nullable Reference Types make generic constraints work differently for `T` and `T?`
 
 If the type argument for `T` is a reference type, `T?` references the corresponding nullable reference type.
-For example, if `T` is a string, then `T?` is a `string?`.
+For example, if `T` is a `string`, then `T?` is a `string?`.
 
 ```csharp
 #nullable enable
@@ -503,7 +504,7 @@ new Test<string>().DoSomething(null); // string?
 ```
 
 If the type argument for `T` is a value type,`T?` references the same value type, `T`.
-For example, if `T` is an int, the `T?` is also an `int`.
+For example, if `T` is an `int`, the `T?` is also an `int`.
 
 ```csharp
 #nullable enable
@@ -516,7 +517,7 @@ new Test<int>().DoSomething(null); // int + CS1503 error
 ```
 
 If the type argument for `T` is a nullable reference type, `T?` references that same nullable reference type.
-For example, if `T` is a string?, then `T?` is also a `string?`.
+For example, if `T` is a `string?`, then `T?` is also a `string?`.
 
 ```csharp
 #nullable enable
@@ -529,7 +530,7 @@ new Test<string?>().DoSomething(null); // string?
 ```
 
 If the type argument for `T` is a nullable value type, `T?` references that same nullable value type.
-For example, if `T` is an int?, then `T?` is also an `int?`.
+For example, if `T` is an `int?`, then `T?` is also an `int?`.
 
 ```csharp
 #nullable enable
@@ -592,7 +593,7 @@ public string? ReviewComment {
 
 A non-nullable parameter, field, property, or return value may be `null`. Mostly used within generic types.
 
-Use the MaybeNull attribute when your API should be a non-nullable type, typically a generic type parameter, but there may be instances where null would be returned.
+Use the `MaybeNull` attribute when your API should be a non-nullable type, typically a generic type parameter, but there may be instances where null would be returned.
 
 ```csharp
 #nullable enable
@@ -687,14 +688,14 @@ if (!TryGetMessage("sample", out string? msg)) {
 
 A non-nullable argument may be `null` when the method returns the specified `bool` value. Recommended to use it instead of `NotNullWhen` in cases where a generic type's nullability needs to be marked.
 
-Using `T?` in the following code can have different behavior for reference-types and value-types.
+**Bad code:** Using `T?` in the following code can have different behavior for reference-types and value-types.
 ```csharp
 #nullable enable
 
 public bool TryDoSomething<T>(string key, out T? result);
 ```
 
-Resolve the issue using `MaybeNullWhen` attribute.
+**Good code:** Resolve the issue using `MaybeNullWhen` attribute.
 ```csharp
 #nullable enable
 
@@ -1004,7 +1005,7 @@ public DbSet<Customer> Customers { get; set; } = null!
 
 With optional relationships, it's possible to encounter compiler warnings where an actual null reference exception would be impossible. EF Core guarantees that if an optional related entity does not exist, any navigation to it will simply be ignored, rather than throwing.
 
-It is necessary to use the null-forgiving operator `!` to inform the compiler that an actual null value isn't possible.
+It is necessary to use the null-forgiving operator `!` to inform the compiler that an actual `null` value isn't possible.
 
 ```csharp
 #nullable enable
@@ -1056,7 +1057,7 @@ Different application layers require different ways of checking and enforcing th
 To keep it simple, a monad is:
 - A not so easy topic in category theory
 - In programming, it originates from functional programming
-- "Wrapper around some T type"
+- "Wrapper around some `T` type"
 - Chains multiple operations into a single instruction
 
 
