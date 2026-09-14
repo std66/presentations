@@ -1,9 +1,26 @@
-# Információk
+# Mennyibe kerül a bankkártyás fizetés elfogadása a kereskedőnek?
+
+## Információk
 - **Szerző**: Sinku Tamás (sinkutamas@gmail.com)
 - **Licenc**: Creative Commons BY-NC-SA
-- **Utoljára módosítva**: 2026. szeptember 14.
+- **Utoljára módosítva**: 2026. szeptember 15.
 
-# Mennyibe kerül a bankkártyás fizetés elfogadása a kereskedőnek?
+## Felelősség és garancia
+
+A szerző semmilyen felelősséget és garanciát nem vállal a dokumentumokban leírt információk helyességéért, sem azok pontosságáért. Az olvasó elfogadja, hogy az alábbi információkat teljes mértékben saját felelősségére használja fel.
+A dokumentumban írtak felhasználása és alkalmazása során keletkezett közvetlen és közvetett károkért a szerző nem tartozik kártérítési felelősséggel és kártérítési kötelezettséggel sem terhelhető.
+
+Az olvasó kijelenti, hogy ennek teljes tudatában olvassa tovább a dokumentumot.
+
+## Kontribúció és észrevételek
+
+A szerző örömmel veszi az olvasók visszajelzését és tartalombeli hozzájárulásait a még pontosabb információk megosztásáért. Az olvasó ezt kétféleképp teheti meg:
+1. Javaslatot vagy hibákat jelezhet GitHub Issue nyitásával.
+2. Szerkesztési javaslatot adhat be GitHub Pull Request nyitásával.
+
+Az eredeti GitHub repository elérhető itt: https://github.com/std66/presentations
+
+## Bevezetés
 
 Ebben a dokumentumban a **Fizetési Pont** és az **OFSZ** példáján keresztül szeretném elmagyarázni, hogy miképp számolható ki az, hogy egy bankkártyás fizetés után ténylegesen mennyi pénz marad a kereskedő zsebében.
 
